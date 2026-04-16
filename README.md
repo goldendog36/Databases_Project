@@ -9,3 +9,5 @@ To create the tables, run mysql:
 sudo mysql -u root < tables.sql
 
 Then run other sql statements in a python file which we can probably turn into our cli or other implementation after a while.
+
+The S&P500_Historical_Data.csv is too large to upload to github so when we submit our project we might have to bundle it seperately from the rest of our project.
