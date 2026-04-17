@@ -6,7 +6,7 @@ def connect():
         host = "localhost",
         user = "root",
         password = "ENTER YOUR PASSWORD",
-        database = "ENTER WHAT YOU NAMED THE DATABASE"
+        database = "SP500_Analysis"
     )
 
 def main():
