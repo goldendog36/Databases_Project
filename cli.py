@@ -1,13 +1,5 @@
+from db import connect
 import sys
-import mysql.connector
-
-def connect():
-    return mysql.connector.connect(
-        host = "localhost",
-        user = "root",
-        password = "ENTER YOUR PASSWORD",
-        database = "SP500_Analysis"
-    )
 
 def main():
     conn = connect()
