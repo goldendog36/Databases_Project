@@ -8,7 +8,7 @@ def connect():
         database = "SP500_Analysis"
     )
 
-def execute_query(cursor, query, params=None, fetch=False):
+def execute_query(cursor, query, params=None):
     try: 
         cursor.execute(query, params or ())
         return cursor.fetchall()

@@ -12,7 +12,7 @@ Before running the actual script, find
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         password = "ENTER YOUR PASSWORD",
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-in cli.py at the top. Replace The words in quotations with your mysql password for your 'root'@'localhost'
+in db.py at the top. Replace The words in quotations with your mysql password for your 'root'@'localhost'
 
 Run
 ----------------------------------------------------------
