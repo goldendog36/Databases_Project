@@ -2,7 +2,8 @@ from db import execute_query
 
 def option_1(cursor):
     print("Yay!")
-    # rows = execute_query(cursor, "SQL goes here")
+    # params = prompt user if needed for SQL parameters
+    # rows = execute_query(cursor, SQL goes here, params go here)
     # for r in rows:
     #     print(r)
 

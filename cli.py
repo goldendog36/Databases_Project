@@ -21,6 +21,7 @@ def main():
         cursor.close()
         conn.close()
         print("Thank you for using AlgoTrade!")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main();
