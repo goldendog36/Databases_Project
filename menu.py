@@ -5,10 +5,10 @@ MENU = {
     "2": ("Option 2 description", option_2),
     "3": ("Option 3 description", option_3),
     "4": ("Option 4 description", option_4),
-    "5": ("Option 5 description", option_5),
-    "6": ("Option 6 description", option_6),
-    "7": ("Option 7 description", option_7),
-    "8": ("Option 8 description", option_8),
+    "5": ("See the 10 highest volume trading days for a specific sector to examine possible macroeconomic events", option_5),
+    "6": ("List the sectors that generated the most buy signals during a specific market period", option_6),
+    "7": ("Find 'falling knives': stocks with an oversold RSI that did not generate a buy signal in the subsequent 30 days", option_7),
+    "8": ("Check how often different indicators are firing", option_8),
     "9": ("Exit", None)
 }
 
