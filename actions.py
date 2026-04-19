@@ -76,38 +76,45 @@ def option_3(cursor):
     start = f"{year}-01-01"
     end = f"{year}-12-31"
 
+    # Step 1: Calculate the average volume once
+    avg_volume_query = """
+        SELECT AVG(volume) 
+        FROM Daily_Prices 
+        WHERE ticker = %s AND trade_date BETWEEN %s AND %s
+    """
+    avg_result = execute_query(cursor, avg_volume_query, (stock, start, end))
+
+    if not avg_result or avg_result[0][0] is None:
+        print(f"No volume data found for {stock} in {year}.")
+        return
+
+    avg_vol = avg_result[0][0]
+
+    # Step 2: Run the main query using that average
+    # Note: Using 'BUY' in all caps to match your SQL setup
     query = """
             SELECT dp.ticker, dp.trade_date, ts.indicator_used, dp.volume, dp.close_price
             FROM Daily_Prices dp
             JOIN Trading_Signals ts ON dp.price_id = ts.price_id
-            WHERE ts.signal_type = 'Buy'
+            WHERE ts.signal_type = 'BUY'
             AND dp.ticker = %s
-            AND dp.volume > (
-                SELECT AVG(dp_inner.volume)
-                FROM Daily_Prices dp_inner
-                WHERE dp_inner.ticker = dp.ticker
-                AND dp_inner.trade_date BETWEEN %s AND %s
-            )
+            AND dp.trade_date BETWEEN %s AND %s
+            AND dp.volume > %s
             ORDER BY dp.trade_date DESC;
     """
 
-    results = execute_query(cursor, query, (stock, start, end,))
+    results = execute_query(cursor, query, (stock, start, end, avg_vol))
 
     if results:
-        print(f"{stock} from {start} to {end} has a log of: ")
-        header = f"{'TICKER':<8} | {'DATE':<25} | {'INDICATOR':>10} | {'VOLUME':>10} | {'CLOSE':>10}"
+        print(f"\n{stock} high-volume buy signals in {year} (Avg Vol: {avg_vol:,.0f}):")
+        header = f"{'TICKER':<8} | {'DATE':<25} | {'INDICATOR':>10} | {'VOLUME':>12} | {'CLOSE':>10}"
         print(header)
         print("-" * len(header))
         for row in results:
-            ticker = row[0]
-            date = row[1]
-            indicator = row[2]
-            volume = row[3]
-            close_price = row[4]
-
-            print(f"{ticker:<8} | {str(date):<25} | {indicator:>10} | {volume:>10,} | {close_price:>10.2f}")
+            ticker, date, indicator, volume, price = row
+            print(f"{ticker:<8} | {str(date):<25} | {indicator:>10} | {volume:>12,} | {price:>10.2f}")
     else:
-        print(f"No high volume buy signals found for {stock} in that period.")
+        print(f"No high volume buy signals found for {stock} in {year}.")
 
 def option_4(cursor):
     ticker = input("What stock would you like to see? ").strip().upper()
@@ -196,7 +203,7 @@ def option_6(cursor):
     FROM Equities e
     JOIN Daily_Prices dp ON e.ticker = dp.ticker
     JOIN Trading_Signals ts ON dp.price_id = ts.price_id
-    WHERE ts.signal_type = 'Buy'
+    WHERE ts.signal_type = 'BUY'
     AND dp.trade_date >= %s
     GROUP BY e.sector
     ORDER BY total_buy_signals DESC
@@ -217,21 +224,21 @@ def option_6(cursor):
 
 def option_7(cursor):
     sql = """
-    SELECT dp.ticker, dp.trade_date as oversold_date, o.rsi_14_day, dp.close_price
-    FROM Daily_Prices dp
-    JOIN Oscillators o ON dp.price_id = o.price_id
-    WHERE o.rsi_14_day < 25
-    AND NOT EXISTS (
-        SELECT 1
-        FROM Daily_Prices dp_future
-        JOIN Trading_Signals ts ON dp_future.price_id = ts.price_id
-        WHERE dp_future.ticker = dp.ticker
-        AND ts.signal_type = 'Buy'
-        AND dp_future.trade_date > dp.trade_date
-        AND dp_future.trade_date <= DATE_ADD(dp.trade_date, INTERVAL 30 DAY)
-    )
-    ORDER BY dp.trade_date DESC;
-    """
+        SELECT dp.ticker, dp.trade_date as oversold_date, o.rsi_14_day, dp.close_price
+        FROM Daily_Prices dp
+        JOIN Oscillators o ON dp.price_id = o.price_id
+        WHERE o.rsi_14_day < 25
+        AND NOT EXISTS (
+            SELECT 1
+            FROM Daily_Prices dp_future
+            JOIN Trading_Signals ts ON dp_future.price_id = ts.price_id
+            WHERE dp_future.ticker = dp.ticker
+            AND ts.signal_type = 'BUY'
+            AND dp_future.trade_date > dp.trade_date
+            AND dp_future.trade_date <= DATE_ADD(dp.trade_date, INTERVAL 30 DAY)
+        )
+        ORDER BY dp.trade_date DESC;
+        """
 
     results = execute_query(cursor, sql)
 
