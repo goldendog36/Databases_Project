@@ -1,10 +1,10 @@
 from actions import option_1, option_2, option_3, option_4, option_5, option_6, option_7, option_8
 
 MENU = {
-    "1": ("Option 1 description", option_1),
-    "2": ("Option 2 description", option_2),
-    "3": ("Option 3 description", option_3),
-    "4": ("Option 4 description", option_4),
+    "1": ("See a chronological log of all automated trading actions generated for a stock.", option_1),
+    "2": ("Group stocks by ticker and calculate their maximum and minimum RSI values over a specific year to find the most volatile assets.", option_2),
+    "3": ("Find days where a 'Buy' signal triggered, but only if the trading volume on that specific day was strictly greater than that exact stock's average daily volume for a specific year.", option_3),
+    "4": ("See all price action and calculated indicators for a stock in a defined date range", option_4),
     "5": ("See the 10 highest volume trading days for a specific sector to examine possible macroeconomic events", option_5),
     "6": ("List the sectors that generated the most buy signals during a specific market period", option_6),
     "7": ("Find 'falling knives': stocks with an oversold RSI that did not generate a buy signal in the subsequent 30 days", option_7),
