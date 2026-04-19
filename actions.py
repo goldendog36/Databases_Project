@@ -8,7 +8,7 @@ from datetime import datetime
 #     print(r)
 
 def option_1(cursor):
-    stock = input("What stock would you like to see a log of?").strip()
+    stock = input("What stock would you like to see a log of?").strip().upper()
 
     query = """
             SELECT dp.date, ts.signal_type, ts.indicator_used, dp.close_price
@@ -21,8 +21,9 @@ def option_1(cursor):
     results = execute_query(cursor, query, (stock,))
     if results:
         print(f"{stock} has a log of: ")
-        print(f"{'DATE':<25} | {'SIGNAL TYPE':<10} | {'INDICATOR':>10} | {'CLOSE':>10}")
-        print("-"*62)
+        header = f"{'DATE':<25} | {'SIGNAL TYPE':<10} | {'INDICATOR':>10} | {'CLOSE':>10}"
+        print(header)
+        print("-" * len(header))
         for row in results:
             date = row[0]
             signal_type = row[1]
@@ -53,9 +54,10 @@ def option_2(cursor):
 
     results = execute_query(cursor, query, (start_date, end_date,))
     if results:
-        print(f"{start_date} to {end_date} has a log of: \n")
-        print(f"{'TICKER':<8} | {'COMPANY NAME':<25} | {'PEAK RSI':>10} | {'LOWEST RSI':>10}")
-        print("-" * 62)
+        print(f"{start_date} to {end_date} has a log of: ")
+        header = f"{'TICKER':<8} | {'COMPANY NAME':<25} | {'PEAK RSI':>10} | {'LOWEST RSI':>10}"
+        print(header)
+        print("-" * len(header))
         for row in results:
             ticker = row[0]
             name = row[1]
@@ -68,10 +70,73 @@ def option_2(cursor):
 
 
 def option_3(cursor):
-    print("Yay!")
+    stock = input("What stock would you like to check out?").strip().upper()
+    year = input("What year would you like to look at?").strip()
+
+    start = f"{year}-01-01"
+    end = f"{year}-12-31"
+
+    query = """
+            SELECT dp.ticker, dp.date, ts.indicator_used, dp.volume, dp.close_price
+            FROM Daily_Prices dp
+            JOIN Trading_Signals ts ON dp.price_id = ts.price_id
+            WHERE ts.signal_type = 'Buy'
+            AND dp.ticker = %s
+            AND dp.volume > (
+                SELECT AVG(dp_inner.volume)
+                FROM Daily_Prices dp_inner
+                WHERE dp_inner.ticker = dp.ticker
+                AND dp_inner.date BETWEEN %s AND %s
+            )
+            ORDER BY dp.date DESC;
+    """
+
+    results = execute_query(cursor, query, (stock, start, end,))
+
+    if results:
+        print(f"{stock} from {start} to {end} has a log of: ")
+        header = f"{'TICKER':<8} | {'DATE':<25} | {'INDICATOR':>10} | {'VOLUME':>10} | {'CLOSE':>10}"
+        print(header)
+        print("-" * len(header))
+        for row in results:
+            ticker = row[0]
+            date = row[1]
+            indicator = row[2]
+            volume = row[3]
+            close_price = row[4]
+
+            print(f"{ticker:<8} | {str(date):<25} | {indicator:>10} | {volume:>10,} | {close_price:>10.2f}")
+    else:
+        print(f"No high volume buy signals found for {stock} in that period.")
 
 def option_4(cursor):
-    print("Yay!")
+    ticker = input("What stock would you like to see? ").strip().upper()
+    start_date = input("Enter start date (YYYY-MM-DD): ").strip()
+    end_date = input("Enter end date (YYYY-MM-DD): ").strip()
+
+    query = """
+                SELECT dp.date, dp.close_price, dp.volume, ma.ma_50_day, ma.ma_200_day, o.rsi_14_day
+                FROM Daily_Prices dp
+                JOIN Moving_Averages ma ON dp.price_id = ma.price_id
+                JOIN Oscillators o ON dp.price_id = o.price_id
+                WHERE dp.ticker = %s
+                AND dp.date BETWEEN %s AND %s
+                ORDER BY dp.date ASC;
+                """
+
+    results = execute_query(cursor, query, (ticker, start_date, end_date))
+
+    if results:
+        print(f"\nPrice Action and Indicators for {ticker} from {start_date} to {end_date}:")
+        header = f"{'DATE':<12} | {'CLOSE':>10} | {'VOLUME':>12} | {'MA 50':>10} | {'MA 200':>10} | {'RSI':>8}"
+        print(header)
+        print("-" * len(header))
+
+        for row in results:
+            date, close, vol, ma50, ma200, rsi = row
+            print(f"{str(date):<12} | {close:>10.2f} | {vol:>12,} | {ma50:>10.2f} | {ma200:>10.2f} | {rsi:>8.2f}")
+    else:
+        print(f"No data found for {ticker} in that date range.")
 
 def option_5(cursor):
     sectors = get_sectors(cursor)
