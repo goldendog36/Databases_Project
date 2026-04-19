@@ -145,3 +145,6 @@ SET t.signal_type = CASE
     ELSE 'HOLD'
 END,
 t.indicator_used = 'MA_Crossover';
+
+-- Optimization for fresh machines
+CREATE INDEX idx_ticker_date ON Daily_Prices (ticker, trade_date);

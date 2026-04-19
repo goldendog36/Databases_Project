@@ -1,56 +1,75 @@
 import kagglehub
 import os
 import shutil
+import mysql.connector
+from db import connect  # Uses your existing connection logic
 
-# 1. Setup folders
-project_dir = os.getcwd()
-data_dir = os.path.join(project_dir, "data")
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
 
-# 2. Download from Kaggle
-print("Downloading data from Kaggle...")
-path1_src = kagglehub.dataset_download("alexanderxela/sp-500-companies")
-path2_src = kagglehub.dataset_download("jacksaleeby/s-and-p500-historical-data")
+def run_setup():
+    # 1. Folders and Downloads
+    project_dir = os.getcwd()
+    data_dir = os.path.join(project_dir, "data")
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
 
-# 3. Enhanced Find and Move function
-def move_csv(src_folder, dest_folder, label):
-    print(f"\nSearching for {label} in: {src_folder}")
-    for root, dirs, files in os.walk(src_folder):
-        for file in files:
-            print(f"  - Found file: {file}") # This shows us every file it sees
-            if file.endswith(".csv"):
-                src_path = os.path.join(root, file)
-                dest_path = os.path.join(dest_folder, file)
-                shutil.copy(src_path, dest_path)
-                print(f"  SUCCESS: Moved {file} to {dest_folder}")
-                return dest_path
-    return None
+    print("Downloading data...")
+    path1_src = kagglehub.dataset_download("alexanderxela/sp-500-companies")
+    path2_src = kagglehub.dataset_download("jacksaleeby/s-and-p500-historical-data")
 
-# 4. Assign the paths
-path1 = move_csv(path1_src, data_dir, "Company Data")
-path2 = move_csv(path2_src, data_dir, "Historical Price Data")
+    # 2. Find and Copy Files (The 'Walk' logic we fixed)
+    def get_path(src):
+        for root, dirs, files in os.walk(src):
+            for file in files:
+                if file.lower().endswith(".csv"):
+                    dest = os.path.join(data_dir, file)
+                    shutil.copy(os.path.join(root, file), dest)
+                    return dest
+        return None
 
-# 5. Check and Replace
-if path1 and path2:
-    with open("other_tables.sql", "r") as file:
-        sql_content = file.read()
+    path1 = get_path(path1_src)
+    path2 = get_path(path2_src)
 
-    # Final verification of the strings
+    # 3. Prepare SQL Content
+    with open("other_tables.sql", "r") as f:
+        sql_content = f.read()
+
+    # Replace placeholders with absolute paths
     sql_content = sql_content.replace("{{path1}}", path1).replace("{{path2}}", path2)
 
-    with open("temp_tables.sql", "w") as file:
-        file.write(sql_content)
+    # 4. AUTOMATIC EXECUTION
+    print("Connecting to MySQL to build database...")
+    try:
+        # We need allow_local_infile=True for the LOAD DATA command to work in Python
+        conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="rootuser1234",  # Use your specific password here
+            allow_local_infile=True
+        )
+        cursor = conn.cursor()
 
-    print("\n" + "="*30)
-    print("SETUP SUCCESSFUL")
-    print("="*30)
-    print(f"SQL file created: temp_tables.sql")
-    print(f"Data folder: {data_dir}")
-    print("\nRun this command in your terminal to build the DB:")
-    print("mysql --local-infile=1 -u root -p < temp_tables.sql")
-else:
-    print("\n" + "!"*30)
-    print("CRITICAL ERROR: CSVs NOT FOUND")
-    print("!"*30)
-    print("Check the 'Found file' list above to see what was actually downloaded.")
+        # Enable local infile on the server session
+        cursor.execute("SET GLOBAL local_infile = 1;")
+
+        # Split the SQL file into individual commands
+        # MySQL Connector cannot execute multiple statements at once by default
+        commands = sql_content.split(';')
+
+        for command in commands:
+            if command.strip():
+                print(f"Executing: {command[:50]}...")
+                cursor.execute(command)
+
+        conn.commit()
+        print("Database built and indexed successfully.")
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
+if __name__ == "__main__":
+    run_setup()
