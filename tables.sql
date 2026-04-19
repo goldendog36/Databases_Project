@@ -2,10 +2,10 @@ CREATE DATABASE IF NOT EXISTS SP500_Analysis;
 USE SP500_Analysis;
 
 DROP TABLE IF EXISTS Equities;
-DROP TABLE IF EXISTS Daily_Prices;
+DROP TABLE IF EXISTS Trading_Signals;
 DROP TABLE IF EXISTS Moving_Averages;
 DROP TABLE IF EXISTS Oscillators;
-DROP TABLE IF EXISTS Trading_Signals;
+DROP TABLE IF EXISTS Daily_Prices;
 
 \! echo "Creating tables...";
 
@@ -28,26 +28,6 @@ CREATE TABLE IF NOT EXISTS Daily_Prices (
     volume BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS Moving_Averages (
-    price_id INT PRIMARY KEY AUTO_INCREMENT,
-    ma_50_day DECIMAL(10,2),
-    ma_200_day DECIMAL(10,2)
-);
-
-CREATE TABLE IF NOT EXISTS Oscillators (
-    price_id INT PRIMARY KEY AUTO_INCREMENT,
-    ticker VARCHAR(10) NOT NULL,
-    trade_date DATE NOT NULL,
-    rsi_14_day DECIMAL(5,2)
-);
-
-CREATE TABLE IF NOT EXISTS Trading_Signals (
-    price_id INT PRIMARY KEY AUTO_INCREMENT,
-    signal_id INT,
-    signal_type VARCHAR(50),
-    indicator_used VARCHAR(50)
-);
-
 \! echo "Tables created successfully. Loading company data...";
 
 LOAD DATA INFILE '/var/lib/mysql-files/sp500-companies.csv'
@@ -66,6 +46,14 @@ FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 IGNORE 1 ROWS
 (ticker, trade_date, open_price, high_price, low_price, close_price, adjusted_close_price, volume);
 
+CREATE TABLE IF NOT EXISTS Oscillators (
+    price_id INT PRIMARY KEY AUTO_INCREMENT,
+    ticker VARCHAR(10) NOT NULL,
+    trade_date DATE NOT NULL,
+    rsi_14_day DECIMAL(5,2),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+);
+
 LOAD DATA INFILE '/var/lib/mysql-files/SP500_Historical_Data.csv'
 INTO TABLE Oscillators
 CHARACTER SET latin1
@@ -74,6 +62,13 @@ IGNORE 1 ROWS
 (ticker, trade_date, @dummy, @dummy, @dummy, @dummy, @dummy, @dummy);
 
 \! echo "Data loaded successfully. Calculating moving averages...";
+
+CREATE TABLE Moving_Averages (
+    price_id INT PRIMARY KEY AUTO_INCREMENT,
+    ma_50_day DECIMAL(10,2),
+    ma_200_day DECIMAL(10,2),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+);
 
 -- Calculate 50-day moving average
 UPDATE Moving_Averages t
@@ -89,17 +84,20 @@ JOIN (
 SET t.ma_50_day = x.ma_50_day;
 
 -- Calculate 200-day moving average
-UPDATE Moving_Averages t
-JOIN (
-    SELECT 
-        price_id,
-        AVG(close_price) OVER (
-            PARTITION BY ticker
-            ROWS BETWEEN 199 PRECEDING AND CURRENT ROW
-        ) AS ma_200_day
-    FROM Daily_Prices
-) x ON t.price_id = x.price_id
-SET t.ma_200_day = x.ma_200_day;
+INSERT INTO Moving_Averages (price_id, ma_50_day, ma_200_day)
+SELECT 
+    dp.price_id,
+    AVG(dp.close_price) OVER (
+        PARTITION BY dp.ticker
+        ORDER BY dp.trade_date
+        ROWS BETWEEN 49 PRECEDING AND CURRENT ROW
+    ) AS ma_50_day,
+    AVG(dp.close_price) OVER (
+        PARTITION BY dp.ticker
+        ORDER BY dp.trade_date
+        ROWS BETWEEN 199 PRECEDING AND CURRENT ROW
+    ) AS ma_200_day
+FROM Daily_Prices dp;
 
 \! echo "Moving averages calculated. Calculating RSI...";
 
@@ -144,11 +142,24 @@ SET t.rsi_14_day = 100 - (100 / (1 + (r.avg_gain / NULLIF(r.avg_loss, 0))));
 
 \! echo "RSI calculated. Generating trading signals...";
 
+CREATE TABLE IF NOT EXISTS Trading_Signals (
+    signal_id INT PRIMARY KEY AUTO_INCREMENT,
+    price_id INT,
+    signal_type VARCHAR(50),
+    indicator_used VARCHAR(50),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+);
+
 -- Generate trading signals based on moving average crossover
-UPDATE Trading_Signals t
-JOIN Moving_Averages m ON t.price_id = m.price_id
-SET t.signal_type = 'BUY',
-    t.indicator_used = 'MA_50'
-WHERE m.ma_50_day > m.ma_200_day;
+INSERT INTO Trading_Signals (price_id, signal_type, indicator_used)
+SELECT 
+    m.price_id,
+    CASE
+        WHEN m.ma_50_day > m.ma_200_day * 1.01 THEN 'BUY'
+        WHEN m.ma_50_day < m.ma_200_day * 0.99 THEN 'SELL'
+        ELSE 'HOLD'
+    END AS signal_type,
+    'MA_50'
+FROM Moving_Averages m;
 
 \! echo "Done.";

@@ -11,11 +11,11 @@ def option_1(cursor):
     stock = input("What stock would you like to see a log of?").strip().upper()
 
     query = """
-            SELECT dp.date, ts.signal_type, ts.indicator_used, dp.close_price
+            SELECT dp.trade_date, ts.signal_type, ts.indicator_used, dp.close_price
             FROM Trading_Signals ts
             JOIN Daily_Prices dp ON ts.price_id = dp.price_id
             WHERE dp.ticker = %s
-            ORDER BY dp.date DESC
+            ORDER BY dp.trade_date DESC
             LIMIT 50;
             """
     results = execute_query(cursor, query, (stock,))
@@ -46,7 +46,7 @@ def option_2(cursor):
             FROM Equities e
             JOIN Daily_Prices dp ON e.ticker = dp.ticker
             JOIN Oscillators o ON dp.price_id = o.price_id
-            WHERE dp.date BETWEEN %s AND %s
+            WHERE dp.trade_date BETWEEN %s AND %s
             GROUP BY e.ticker, e.company_name
             ORDER BY lowest_rsi ASC
             LIMIT 20;
@@ -77,7 +77,7 @@ def option_3(cursor):
     end = f"{year}-12-31"
 
     query = """
-            SELECT dp.ticker, dp.date, ts.indicator_used, dp.volume, dp.close_price
+            SELECT dp.ticker, dp.trade_date, ts.indicator_used, dp.volume, dp.close_price
             FROM Daily_Prices dp
             JOIN Trading_Signals ts ON dp.price_id = ts.price_id
             WHERE ts.signal_type = 'Buy'
@@ -86,9 +86,9 @@ def option_3(cursor):
                 SELECT AVG(dp_inner.volume)
                 FROM Daily_Prices dp_inner
                 WHERE dp_inner.ticker = dp.ticker
-                AND dp_inner.date BETWEEN %s AND %s
+                AND dp_inner.trade_date BETWEEN %s AND %s
             )
-            ORDER BY dp.date DESC;
+            ORDER BY dp.trade_date DESC;
     """
 
     results = execute_query(cursor, query, (stock, start, end,))
@@ -115,13 +115,13 @@ def option_4(cursor):
     end_date = input("Enter end date (YYYY-MM-DD): ").strip()
 
     query = """
-                SELECT dp.date, dp.close_price, dp.volume, ma.ma_50_day, ma.ma_200_day, o.rsi_14_day
+                SELECT dp.trade_date, dp.close_price, dp.volume, ma.ma_50_day, ma.ma_200_day, o.rsi_14_day
                 FROM Daily_Prices dp
                 JOIN Moving_Averages ma ON dp.price_id = ma.price_id
                 JOIN Oscillators o ON dp.price_id = o.price_id
                 WHERE dp.ticker = %s
-                AND dp.date BETWEEN %s AND %s
-                ORDER BY dp.date ASC;
+                AND dp.trade_date BETWEEN %s AND %s
+                ORDER BY dp.trade_date ASC;
                 """
 
     results = execute_query(cursor, query, (ticker, start_date, end_date))
@@ -158,7 +158,7 @@ def option_5(cursor):
     sector_choice = sectors[choice-1]
 
     sql = """
-    SELECT e.company_name, dp.ticker, dp.date, dp.volume, dp.close_price
+    SELECT e.company_name, dp.ticker, dp.trade_date, dp.volume, dp.close_price
     FROM Daily_Prices dp
     JOIN Equities e ON dp.ticker = e.ticker
     WHERE e.sector = %s
@@ -197,7 +197,7 @@ def option_6(cursor):
     JOIN Daily_Prices dp ON e.ticker = dp.ticker
     JOIN Trading_Signals ts ON dp.price_id = ts.price_id
     WHERE ts.signal_type = 'Buy'
-    AND dp.date >= %s
+    AND dp.trade_date >= %s
     GROUP BY e.sector
     ORDER BY total_buy_signals DESC
     LIMIT 10;
@@ -217,7 +217,7 @@ def option_6(cursor):
 
 def option_7(cursor):
     sql = """
-    SELECT dp.ticker, dp.date as oversold_date, o.rsi_14_day, dp.close_price
+    SELECT dp.ticker, dp.trade_date as oversold_date, o.rsi_14_day, dp.close_price
     FROM Daily_Prices dp
     JOIN Oscillators o ON dp.price_id = o.price_id
     WHERE o.rsi_14_day < 25
@@ -227,10 +227,10 @@ def option_7(cursor):
         JOIN Trading_Signals ts ON dp_future.price_id = ts.price_id
         WHERE dp_future.ticker = dp.ticker
         AND ts.signal_type = 'Buy'
-        AND dp_future.date > dp.date
-        AND dp_future.date <= DATE_ADD(dp.date, INTERVAL 30 DAY)
+        AND dp_future.trade_date > dp.trade_date
+        AND dp_future.trade_date <= DATE_ADD(dp.trade_date, INTERVAL 30 DAY)
     )
-    ORDER BY dp.date DESC;
+    ORDER BY dp.trade_date DESC;
     """
 
     results = execute_query(cursor, sql)
