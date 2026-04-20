@@ -8,6 +8,13 @@ python3 setup.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Then enter your passwords when prompted.
 
+If using other_setup.py, find
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        password="rootuser1234",
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+around line 46 of other_setup.py. Replace the words in 
+quotations with your mysql password for your 'root'@'localhost'
+
 Before running the actual script, find
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         password = "ENTER YOUR PASSWORD",
