@@ -37,7 +37,7 @@ def run_setup():
         conn = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="rootuser1234",
+            password="your password",
             allow_local_infile=True
         )
         cursor = conn.cursor()
