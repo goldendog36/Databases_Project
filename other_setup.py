@@ -2,7 +2,7 @@ import kagglehub
 import os
 import shutil
 import mysql.connector
-from db import connect  # Uses your existing connection logic
+from db import connect
 
 
 def run_setup():

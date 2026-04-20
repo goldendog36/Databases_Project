@@ -1,23 +1,17 @@
 from db import execute_query
 from datetime import datetime
 
-# GUIDELINES:
-# params = prompt user if needed for SQL parameters
-# rows = execute_query(cursor, SQL goes here, params go here)
-# for r in rows:
-#     print(r)
-
 def option_1(cursor):
     stock = input("\nWhat stock would you like to see a log of? ").strip().upper()
 
     query = """
-            SELECT dp.trade_date, ts.signal_type, ts.indicator_used, dp.close_price
-            FROM Trading_Signals ts
-            JOIN Daily_Prices dp ON ts.price_id = dp.price_id
-            WHERE dp.ticker = %s
-            ORDER BY dp.trade_date DESC
-            LIMIT 50;
-            """
+        SELECT dp.trade_date, ts.signal_type, ts.indicator_used, dp.close_price
+        FROM Trading_Signals ts
+        JOIN Daily_Prices dp ON ts.price_id = dp.price_id
+        WHERE dp.ticker = %s
+        ORDER BY dp.trade_date DESC
+        LIMIT 50;
+    """
     results = execute_query(cursor, query, (stock,))
     if results:
         print(f"{stock} has a log of: ")
@@ -42,14 +36,14 @@ def option_2(cursor):
     end_date = f"{year}-12-31"
 
     query = """
-            SELECT e.ticker, e.company_name, MAX(o.rsi_14_day) as peak_rsi, MIN(o.rsi_14_day) as lowest_rsi
-            FROM Equities e
-            JOIN Daily_Prices dp ON e.ticker = dp.ticker
-            JOIN Oscillators o ON dp.price_id = o.price_id
-            WHERE dp.trade_date BETWEEN %s AND %s
-            GROUP BY e.ticker, e.company_name
-            ORDER BY lowest_rsi ASC
-            LIMIT 20;
+        SELECT e.ticker, e.company_name, MAX(o.rsi_14_day) as peak_rsi, MIN(o.rsi_14_day) as lowest_rsi
+        FROM Equities e
+        JOIN Daily_Prices dp ON e.ticker = dp.ticker
+        JOIN Oscillators o ON dp.price_id = o.price_id
+        WHERE dp.trade_date BETWEEN %s AND %s
+        GROUP BY e.ticker, e.company_name
+        ORDER BY lowest_rsi ASC
+        LIMIT 20;
     """
 
     results = execute_query(cursor, query, (start_date, end_date,))
@@ -91,16 +85,15 @@ def option_3(cursor):
     avg_vol = avg_result[0][0]
 
     # Step 2: Run the main query using that average
-    # Note: Using 'BUY' in all caps to match your SQL setup
     query = """
-            SELECT dp.ticker, dp.trade_date, ts.indicator_used, dp.volume, dp.close_price
-            FROM Daily_Prices dp
-            JOIN Trading_Signals ts ON dp.price_id = ts.price_id
-            WHERE ts.signal_type = 'BUY'
-            AND dp.ticker = %s
-            AND dp.trade_date BETWEEN %s AND %s
-            AND dp.volume > %s
-            ORDER BY dp.trade_date DESC;
+        SELECT dp.ticker, dp.trade_date, ts.indicator_used, dp.volume, dp.close_price
+        FROM Daily_Prices dp
+        JOIN Trading_Signals ts ON dp.price_id = ts.price_id
+        WHERE ts.signal_type = 'BUY'
+        AND dp.ticker = %s
+        AND dp.trade_date BETWEEN %s AND %s
+        AND dp.volume > %s
+        ORDER BY dp.trade_date DESC;
     """
 
     results = execute_query(cursor, query, (stock, start, end, avg_vol))
@@ -122,14 +115,14 @@ def option_4(cursor):
     end_date = input("Enter end date (YYYY-MM-DD): ").strip()
 
     query = """
-                SELECT dp.trade_date, dp.close_price, dp.volume, ma.ma_50_day, ma.ma_200_day, o.rsi_14_day
-                FROM Daily_Prices dp
-                JOIN Moving_Averages ma ON dp.price_id = ma.price_id
-                JOIN Oscillators o ON dp.price_id = o.price_id
-                WHERE dp.ticker = %s
-                AND dp.trade_date BETWEEN %s AND %s
-                ORDER BY dp.trade_date ASC;
-                """
+        SELECT dp.trade_date, dp.close_price, dp.volume, ma.ma_50_day, ma.ma_200_day, o.rsi_14_day
+        FROM Daily_Prices dp
+        JOIN Moving_Averages ma ON dp.price_id = ma.price_id
+        JOIN Oscillators o ON dp.price_id = o.price_id
+        WHERE dp.ticker = %s
+        AND dp.trade_date BETWEEN %s AND %s
+        ORDER BY dp.trade_date ASC;
+    """
 
     results = execute_query(cursor, query, (ticker, start_date, end_date))
 
@@ -166,12 +159,12 @@ def option_5(cursor):
     sector_choice = sectors[choice-1]
 
     sql = """
-    SELECT e.company_name, dp.ticker, dp.trade_date, dp.volume, dp.close_price
-    FROM Daily_Prices dp
-    JOIN Equities e ON dp.ticker = e.ticker
-    WHERE e.sector = %s
-    ORDER BY dp.volume DESC
-    LIMIT 10
+        SELECT e.company_name, dp.ticker, dp.trade_date, dp.volume, dp.close_price
+        FROM Daily_Prices dp
+        JOIN Equities e ON dp.ticker = e.ticker
+        WHERE e.sector = %s
+        ORDER BY dp.volume DESC
+        LIMIT 10
     """
     
     results = execute_query(cursor, sql, (sector_choice,))
@@ -183,8 +176,8 @@ def option_5(cursor):
 
 def get_sectors(cursor):
     sql = """
-    SELECT DISTINCT e.sector
-    FROM Equities e
+        SELECT DISTINCT e.sector
+        FROM Equities e
     """
     rows = execute_query(cursor, sql)
     return [r[0] for r in rows]
@@ -200,17 +193,16 @@ def option_6(cursor):
             print("Invalid date.")
 
     sql = """
-    SELECT e.sector, COUNT(ts.signal_id) as total_buy_signals
-    FROM Equities e
-    JOIN Daily_Prices dp ON e.ticker = dp.ticker
-    JOIN Trading_Signals ts ON dp.price_id = ts.price_id
-    WHERE ts.signal_type = 'BUY'
-    AND dp.trade_date >= %s
-    GROUP BY e.sector
-    ORDER BY total_buy_signals DESC
-    LIMIT 10;
+        SELECT e.sector, COUNT(ts.signal_id) as total_buy_signals
+        FROM Equities e
+        JOIN Daily_Prices dp ON e.ticker = dp.ticker
+        JOIN Trading_Signals ts ON dp.price_id = ts.price_id
+        WHERE ts.signal_type = 'BUY'
+        AND dp.trade_date >= %s
+        GROUP BY e.sector
+        ORDER BY total_buy_signals DESC
+        LIMIT 10;
     """
-    # HAVING COUNT(ts.signal_id) > 50 --> now query returns top 10, not all over 50
 
     results = execute_query(cursor, sql, (valid_date,))
 
@@ -240,7 +232,7 @@ def option_7(cursor):
         )
         ORDER BY dp.trade_date DESC
         LIMIT 100;
-        """
+    """
 
     results = execute_query(cursor, sql)
 
@@ -254,10 +246,10 @@ def option_7(cursor):
 
 def option_8(cursor):
     sql = """
-    SELECT indicator_used, signal_type, COUNT(signal_id) as total_occurrences
-    FROM Trading_Signals
-    GROUP BY indicator_used, signal_type
-    ORDER BY total_occurrences DESC;
+        SELECT indicator_used, signal_type, COUNT(signal_id) as total_occurrences
+        FROM Trading_Signals
+        GROUP BY indicator_used, signal_type
+        ORDER BY total_occurrences DESC;
     """
 
     results = execute_query(cursor, sql)
