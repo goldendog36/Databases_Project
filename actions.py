@@ -8,7 +8,7 @@ from datetime import datetime
 #     print(r)
 
 def option_1(cursor):
-    stock = input("What stock would you like to see a log of?").strip().upper()
+    stock = input("\nWhat stock would you like to see a log of? ").strip().upper()
 
     query = """
             SELECT dp.trade_date, ts.signal_type, ts.indicator_used, dp.close_price
@@ -35,7 +35,7 @@ def option_1(cursor):
         print(f"No log of {stock}")
 
 def option_2(cursor):
-    year = input("What year would you like to look at?").strip()
+    year = input("\nWhat year would you like to look at? ").strip()
 
     # depends on date format
     start_date = f"{year}-01-01"
@@ -70,8 +70,8 @@ def option_2(cursor):
 
 
 def option_3(cursor):
-    stock = input("What stock would you like to check out?").strip().upper()
-    year = input("What year would you like to look at?").strip()
+    stock = input("\nWhat stock would you like to check out? ").strip().upper()
+    year = input("What year would you like to look at? ").strip()
 
     start = f"{year}-01-01"
     end = f"{year}-12-31"
@@ -117,7 +117,7 @@ def option_3(cursor):
         print(f"No high volume buy signals found for {stock} in {year}.")
 
 def option_4(cursor):
-    ticker = input("What stock would you like to see? ").strip().upper()
+    ticker = input("\nWhat stock would you like to see? ").strip().upper()
     start_date = input("Enter start date (YYYY-MM-DD): ").strip()
     end_date = input("Enter end date (YYYY-MM-DD): ").strip()
 
@@ -151,6 +151,7 @@ def option_5(cursor):
     print("------ Sectors ------")
     for index, sector in enumerate(sectors, start=1):
         print(f"({index}) : {sector}")
+    print("\n")
 
     while True:
         try:
@@ -175,7 +176,7 @@ def option_5(cursor):
     
     results = execute_query(cursor, sql, (sector_choice,))
 
-    print(f"10 Highest Trading Volume Days in {sector_choice}")
+    print(f"\n10 Highest Trading Volume Days in {sector_choice}")
     for index, row in enumerate(results, start=1):
         company, ticker, date, volume, price = row
         print(f"{index}. {company} ({ticker}) | {date} | Vol: {volume} | Close: {price}")
