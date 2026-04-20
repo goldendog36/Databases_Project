@@ -9,7 +9,7 @@ def main():
     print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     print("$$$$ Welcome to ALGOTRADE $$$$")
     print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n")
-    print("AlgoTrade is your favorite price-based-indicator platform that tells you when to BUY or SELL")
+    print("AlgoTrade is your favorite price-based-indicator platform that tells you when to BUY, SELL, or HOLD")
 
     try:
         running = True
@@ -20,7 +20,7 @@ def main():
     finally:
         cursor.close()
         conn.close()
-        print("Thank you for using AlgoTrade!")
+        print("\nThank you for using AlgoTrade!")
         sys.exit(0)
 
 if __name__ == "__main__":
