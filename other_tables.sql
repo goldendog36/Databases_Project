@@ -63,7 +63,6 @@ IGNORE 1 ROWS
 (ticker, trade_date, open_price, high_price, low_price, close_price, adjusted_close_price, volume);
 
 
--- After loading Daily_Prices, sync the IDs and base data to the other tables
 INSERT INTO Moving_Averages (price_id)
 SELECT price_id FROM Daily_Prices;
 
@@ -71,7 +70,7 @@ INSERT INTO Oscillators (price_id, ticker, trade_date)
 SELECT price_id, ticker, trade_date FROM Daily_Prices;
 
 
--- Calculate Moving Averages (Fixed with ORDER BY)
+-- Calculate Moving Averages
 UPDATE Moving_Averages t
 JOIN (
     SELECT
@@ -157,5 +156,4 @@ FROM Oscillators o
 WHERE o.rsi_14_day < 30
    OR o.rsi_14_day > 70;
 
--- Optimization for fresh machines
 CREATE INDEX idx_ticker_date ON Daily_Prices (ticker, trade_date);
