@@ -13,9 +13,10 @@ MENU = {
 }
 
 def print_menu():
-    print("What would you like to do today?")
+    print("\nWhat would you like to do today?")
     for key, (label, _) in MENU.items():
         print(f"({key}) : {label}")
+    print("\n")
 
 def handle_choice(choice, cursor):
     action = MENU.get(choice)
