@@ -23,27 +23,31 @@ CREATE TABLE IF NOT EXISTS Daily_Prices (
     low_price DECIMAL(10,2),
     close_price DECIMAL(10,2),
     adjusted_close_price DECIMAL(10,2),
-    volume BIGINT
+    volume BIGINT,
+    FOREIGN KEY (ticker) REFERENCES Equities(ticker)
 );
 
 CREATE TABLE IF NOT EXISTS Moving_Averages (
-    price_id INT PRIMARY KEY ,
+    price_id INT PRIMARY KEY,
     ma_50_day DECIMAL(10,2),
-    ma_200_day DECIMAL(10,2)
+    ma_200_day DECIMAL(10,2),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
 );
 
 CREATE TABLE IF NOT EXISTS Oscillators (
-    price_id INT PRIMARY KEY ,
+    price_id INT PRIMARY KEY,
     ticker VARCHAR(10) NOT NULL,
     trade_date DATE NOT NULL,
-    rsi_14_day DECIMAL(5,2)
+    rsi_14_day DECIMAL(5,2),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
 );
 
 CREATE TABLE IF NOT EXISTS Trading_Signals (
-    price_id INT PRIMARY KEY ,
-    signal_id INT,
+    signal_id INT PRIMARY KEY AUTO_INCREMENT,
+    price_id INT,
     signal_type VARCHAR(50),
-    indicator_used VARCHAR(50)
+    indicator_used VARCHAR(50),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
 );
 
 
