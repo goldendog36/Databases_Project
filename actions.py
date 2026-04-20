@@ -25,7 +25,7 @@ def option_1(cursor):
         print(header)
         print("-" * len(header))
         for row in results:
-            date = row[0]
+            date = str(row[0])
             signal_type = row[1]
             indicator = row[2]
             close_price = row[3]
@@ -237,7 +237,7 @@ def option_7(cursor):
             AND dp_future.trade_date > dp.trade_date
             AND dp_future.trade_date <= DATE_ADD(dp.trade_date, INTERVAL 30 DAY)
         )
-        ORDER BY dp.trade_date DESC;
+        ORDER BY dp.trade_date DESC
         LIMIT 100;
         """
 
