@@ -23,33 +23,28 @@ CREATE TABLE IF NOT EXISTS Daily_Prices (
     low_price DECIMAL(10,2),
     close_price DECIMAL(10,2),
     adjusted_close_price DECIMAL(10,2),
-    volume BIGINT,
-    FOREIGN KEY (ticker) REFERENCES Equities(ticker)
+    volume BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS Moving_Averages (
-    price_id INT PRIMARY KEY,
+    price_id INT PRIMARY KEY ,
     ma_50_day DECIMAL(10,2),
-    ma_200_day DECIMAL(10,2),
-    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+    ma_200_day DECIMAL(10,2)
 );
 
 CREATE TABLE IF NOT EXISTS Oscillators (
-    price_id INT PRIMARY KEY,
+    price_id INT PRIMARY KEY ,
     ticker VARCHAR(10) NOT NULL,
     trade_date DATE NOT NULL,
-    rsi_14_day DECIMAL(5,2),
-    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+    rsi_14_day DECIMAL(5,2)
 );
 
 CREATE TABLE IF NOT EXISTS Trading_Signals (
     signal_id INT PRIMARY KEY AUTO_INCREMENT,
     price_id INT,
     signal_type VARCHAR(50),
-    indicator_used VARCHAR(50),
-    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+    indicator_used VARCHAR(50)
 );
-
 
 
 LOAD DATA LOCAL INFILE '{{path1}}'
@@ -70,9 +65,6 @@ IGNORE 1 ROWS
 
 -- After loading Daily_Prices, sync the IDs and base data to the other tables
 INSERT INTO Moving_Averages (price_id)
-SELECT price_id FROM Daily_Prices;
-
-INSERT INTO Trading_Signals (price_id)
 SELECT price_id FROM Daily_Prices;
 
 INSERT INTO Oscillators (price_id, ticker, trade_date)
@@ -141,14 +133,29 @@ SET t.rsi_14_day = 100 - (100 / (1 + (r.avg_gain / NULLIF(r.avg_loss, 0))));
 
 
 -- Generate trading signals based on moving average crossover
-UPDATE Trading_Signals t
-JOIN Moving_Averages m ON t.price_id = m.price_id
-SET t.signal_type = CASE
-    WHEN m.ma_50_day > m.ma_200_day * 1.01 THEN 'BUY'
-    WHEN m.ma_50_day < m.ma_200_day * 0.99 THEN 'SELL'
-    ELSE 'HOLD'
-END,
-t.indicator_used = 'MA_Crossover';
+INSERT INTO Trading_Signals (price_id, signal_type, indicator_used)
+SELECT
+    m.price_id,
+    CASE
+        WHEN m.ma_50_day > m.ma_200_day * 1.01 THEN 'BUY'
+        WHEN m.ma_50_day < m.ma_200_day * 0.99 THEN 'SELL'
+    END,
+    'MA_Crossover'
+FROM Moving_Averages m
+WHERE m.ma_50_day > m.ma_200_day * 1.01
+   OR m.ma_50_day < m.ma_200_day * 0.99;
+
+INSERT INTO Trading_Signals (price_id, signal_type, indicator_used)
+SELECT
+    o.price_id,
+    CASE
+        WHEN o.rsi_14_day < 30 THEN 'BUY'
+        WHEN o.rsi_14_day > 70 THEN 'SELL'
+    END,
+    'RSI'
+FROM Oscillators o
+WHERE o.rsi_14_day < 30
+   OR o.rsi_14_day > 70;
 
 -- Optimization for fresh machines
 CREATE INDEX idx_ticker_date ON Daily_Prices (ticker, trade_date);
