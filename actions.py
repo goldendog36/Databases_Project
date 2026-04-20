@@ -215,19 +215,19 @@ def option_6(cursor):
 
 def option_7(cursor):
     sql = """
-        SELECT dp.ticker, dp.trade_date as oversold_date, o.rsi_14_day, dp.close_price
+        SELECT dp.ticker, dp.trade_date, o.rsi_14_day, dp.close_price
         FROM Daily_Prices dp
         JOIN Oscillators o ON dp.price_id = o.price_id
+        LEFT JOIN (
+            SELECT ts.price_id, df.ticker, df.trade_date
+            FROM Trading_Signals ts
+            JOIN Daily_Prices df ON ts.price_id = df.price_id
+            WHERE ts.signal_type = 'BUY'
+        ) future_buys ON dp.ticker = future_buys.ticker 
+            AND future_buys.trade_date > dp.trade_date 
+            AND future_buys.trade_date <= DATE_ADD(dp.trade_date, INTERVAL 30 DAY)
         WHERE o.rsi_14_day < 25
-        AND NOT EXISTS (
-            SELECT 1
-            FROM Daily_Prices dp_future
-            JOIN Trading_Signals ts ON dp_future.price_id = ts.price_id
-            WHERE dp_future.ticker = dp.ticker
-            AND ts.signal_type = 'BUY'
-            AND dp_future.trade_date > dp.trade_date
-            AND dp_future.trade_date <= DATE_ADD(dp.trade_date, INTERVAL 30 DAY)
-        )
+        AND future_buys.price_id IS NULL 
         ORDER BY dp.trade_date DESC
         LIMIT 100;
     """

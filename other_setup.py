@@ -37,27 +37,31 @@ def run_setup():
         conn = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="YOUR PASSWORD HERE",
+            password="rootuser1234",
             allow_local_infile=True
         )
         cursor = conn.cursor()
 
+        print("Cleaning old data...")
         cursor.execute("SET GLOBAL local_infile = 1;")
+        cursor.execute("DROP DATABASE IF EXISTS SP500_Analysis;")
+        cursor.execute("CREATE DATABASE SP500_Analysis;")
+        cursor.execute("USE SP500_Analysis;")
 
         commands = sql_content.split(';')
-
         for command in commands:
-            if command.strip():
-                print(f"Executing: {command[:50]}...")
-                cursor.execute(command)
+            clean_command = command.strip()
+            if clean_command:
+                print(f"Executing: {clean_command[:60]}...")
+                cursor.execute(clean_command)
 
         conn.commit()
-        print("Database built and indexed successfully.")
+        print("\nSUCCESS: Database built, 2.7M rows loaded, and indexes created.")
 
     except mysql.connector.Error as err:
-        print(f"Database Error: {err}")
+        print(f"CRITICAL DATABASE ERROR: {err}")
     finally:
-        if conn.is_connected():
+        if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
 

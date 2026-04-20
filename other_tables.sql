@@ -156,4 +156,8 @@ FROM Oscillators o
 WHERE o.rsi_14_day < 30
    OR o.rsi_14_day > 70;
 
+
+CREATE INDEX idx_signals_lookup ON Trading_Signals (price_id, signal_type);
+CREATE INDEX idx_rsi_lookup ON Oscillators (rsi_14_day);
 CREATE INDEX idx_ticker_date ON Daily_Prices (ticker, trade_date);
+CREATE INDEX idx_equities_sector ON Equities (sector);
