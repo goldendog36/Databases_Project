@@ -2,8 +2,8 @@ import mysql.connector
 
 # Database connection
 conn = mysql.connector.connect(
-    host="localhost",        # e.g. "localhost"
-    user="root",    # your MySQL username
+    host="localhost",
+    user="root",
     password="Password",
     database="SP500_Analysis"
 )

@@ -70,7 +70,6 @@ def option_3(cursor):
     start = f"{year}-01-01"
     end = f"{year}-12-31"
 
-    # Step 1: Calculate the average volume once
     avg_volume_query = """
         SELECT AVG(volume) 
         FROM Daily_Prices 
@@ -84,7 +83,6 @@ def option_3(cursor):
 
     avg_vol = avg_result[0][0]
 
-    # Step 2: Run the main query using that average
     query = """
         SELECT dp.ticker, dp.trade_date, ts.indicator_used, dp.volume, dp.close_price
         FROM Daily_Prices dp
