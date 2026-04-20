@@ -197,7 +197,7 @@ def option_6(cursor):
             break
         except ValueError:
             print("Invalid date.")
-       
+
     sql = """
     SELECT e.sector, COUNT(ts.signal_id) as total_buy_signals
     FROM Equities e
@@ -238,6 +238,7 @@ def option_7(cursor):
             AND dp_future.trade_date <= DATE_ADD(dp.trade_date, INTERVAL 30 DAY)
         )
         ORDER BY dp.trade_date DESC;
+        LIMIT 100;
         """
 
     results = execute_query(cursor, sql)
