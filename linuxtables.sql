@@ -1,11 +1,13 @@
 CREATE DATABASE IF NOT EXISTS SP500_Analysis;
 USE SP500_Analysis;
 
+DROP TABLE IF EXISTS Equities;
 DROP TABLE IF EXISTS Trading_Signals;
 DROP TABLE IF EXISTS Moving_Averages;
 DROP TABLE IF EXISTS Oscillators;
 DROP TABLE IF EXISTS Daily_Prices;
-DROP TABLE IF EXISTS Equities;
+
+\! echo "Creating tables...";
 
 CREATE TABLE IF NOT EXISTS Equities (
     ticker VARCHAR(10) NOT NULL PRIMARY KEY,
@@ -26,49 +28,47 @@ CREATE TABLE IF NOT EXISTS Daily_Prices (
     volume BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS Moving_Averages (
-    price_id INT PRIMARY KEY ,
-    ma_50_day DECIMAL(10,2),
-    ma_200_day DECIMAL(10,2)
-);
+\! echo "Tables created successfully. Loading company data...";
 
-CREATE TABLE IF NOT EXISTS Oscillators (
-    price_id INT PRIMARY KEY ,
-    ticker VARCHAR(10) NOT NULL,
-    trade_date DATE NOT NULL,
-    rsi_14_day DECIMAL(5,2)
-);
-
-CREATE TABLE IF NOT EXISTS Trading_Signals (
-    signal_id INT PRIMARY KEY AUTO_INCREMENT,
-    price_id INT,
-    signal_type VARCHAR(50),
-    indicator_used VARCHAR(50)
-);
-
-
-LOAD DATA LOCAL INFILE '{{path1}}'
+LOAD DATA INFILE '/var/lib/mysql-files/sp500-companies.csv'
 INTO TABLE Equities
 CHARACTER SET latin1
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 IGNORE 1 ROWS
 (ticker, company_name, sector, sub_industry, @dummy, @dummy, @dummy, @dummy, @dummy, @dummy);
 
+\! echo "Loading stock data...";
 
-LOAD DATA LOCAL INFILE '{{path2}}'
+LOAD DATA INFILE '/var/lib/mysql-files/SP500_Historical_Data.csv'
 INTO TABLE Daily_Prices
 CHARACTER SET latin1
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 IGNORE 1 ROWS
 (ticker, trade_date, open_price, high_price, low_price, close_price, adjusted_close_price, volume);
 
+CREATE TABLE IF NOT EXISTS Oscillators (
+    price_id INT PRIMARY KEY AUTO_INCREMENT,
+    ticker VARCHAR(10) NOT NULL,
+    trade_date DATE NOT NULL,
+    rsi_14_day DECIMAL(5,2),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+);
 
-INSERT INTO Moving_Averages (price_id)
-SELECT price_id FROM Daily_Prices;
+LOAD DATA INFILE '/var/lib/mysql-files/SP500_Historical_Data.csv'
+INTO TABLE Oscillators
+CHARACTER SET latin1
+FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+IGNORE 1 ROWS
+(ticker, trade_date, @dummy, @dummy, @dummy, @dummy, @dummy, @dummy);
 
-INSERT INTO Oscillators (price_id, ticker, trade_date)
-SELECT price_id, ticker, trade_date FROM Daily_Prices;
+\! echo "Data loaded successfully. Calculating moving averages...";
 
+CREATE TABLE Moving_Averages (
+    price_id INT PRIMARY KEY AUTO_INCREMENT,
+    ma_50_day DECIMAL(10,2),
+    ma_200_day DECIMAL(10,2),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+);
 
 -- Calculate Moving Averages
 UPDATE Moving_Averages t
@@ -90,6 +90,7 @@ JOIN (
 SET t.ma_50_day = x.ma_50_day,
     t.ma_200_day = x.ma_200_day;
 
+\! echo "Moving averages calculated. Calculating RSI...";
 
 -- Calculate 14-day RSI
 WITH price_changes AS (
@@ -130,34 +131,31 @@ JOIN rsi_calc r
  AND t.trade_date = r.trade_date
 SET t.rsi_14_day = 100 - (100 / (1 + (r.avg_gain / NULLIF(r.avg_loss, 0))));
 
+\! echo "RSI calculated. Generating trading signals...";
+
+CREATE TABLE IF NOT EXISTS Trading_Signals (
+    signal_id INT PRIMARY KEY AUTO_INCREMENT,
+    price_id INT,
+    signal_type VARCHAR(50),
+    indicator_used VARCHAR(50),
+    FOREIGN KEY (price_id) REFERENCES Daily_Prices(price_id)
+);
 
 -- Generate trading signals based on moving average crossover
 INSERT INTO Trading_Signals (price_id, signal_type, indicator_used)
-SELECT
+SELECT 
     m.price_id,
     CASE
         WHEN m.ma_50_day > m.ma_200_day * 1.01 THEN 'BUY'
         WHEN m.ma_50_day < m.ma_200_day * 0.99 THEN 'SELL'
-    END,
-    'MA_Crossover'
-FROM Moving_Averages m
-WHERE m.ma_50_day > m.ma_200_day * 1.01
-   OR m.ma_50_day < m.ma_200_day * 0.99;
-
-INSERT INTO Trading_Signals (price_id, signal_type, indicator_used)
-SELECT
-    o.price_id,
-    CASE
-        WHEN o.rsi_14_day < 30 THEN 'BUY'
-        WHEN o.rsi_14_day > 70 THEN 'SELL'
-    END,
-    'RSI'
-FROM Oscillators o
-WHERE o.rsi_14_day < 30
-   OR o.rsi_14_day > 70;
-
+        ELSE 'HOLD'
+    END AS signal_type,
+    'MA_50'
+FROM Moving_Averages m;
 
 CREATE INDEX idx_signals_lookup ON Trading_Signals (price_id, signal_type);
 CREATE INDEX idx_rsi_lookup ON Oscillators (rsi_14_day);
 CREATE INDEX idx_ticker_date ON Daily_Prices (ticker, trade_date);
 CREATE INDEX idx_equities_sector ON Equities (sector);
+
+\! echo "Done.";
