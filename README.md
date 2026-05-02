@@ -12,14 +12,14 @@ If on a Windows/MacOS machine, use other_setup.py and find
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         password="rootuser1234",
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-around line 46 of other_setup.py. Replace the words in 
+on line 40 of other_setup.py. Replace the words in 
 quotations with your mysql password for your 'root'@'localhost'
 
 Before running the actual script, find
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         password = "ENTER YOUR PASSWORD",
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-in db.py at the top. Replace The words in quotations with your mysql password for your 'root'@'localhost'
+in line 7 at db.py and replace the words in quotations with your mysql password for your 'root'@'localhost'
 
 Run
 ----------------------------------------------------------
