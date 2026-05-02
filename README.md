@@ -34,3 +34,8 @@ kagglehub
 subprocess
 sys
 mysql, mysql.connector
+
+to install dependencies, run:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+pip install kagglehub mysql-connector-python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
